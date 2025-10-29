@@ -27,9 +27,10 @@ def load_knowledge_base():
 
 
 def save_embeddings():
-    """Build TF-IDF vectorizer + matrix and persist them."""
+    """Build TF-IDF vectorizer + matrix and persist them. Includes sublinear_tf for improved ranking."""
     kb, docs = load_knowledge_base()
-    vectorizer = TfidfVectorizer(max_df=0.85, min_df=1, ngram_range=(1, 2))
+    # ENHANCEMENT: Added sublinear_tf=True
+    vectorizer = TfidfVectorizer(max_df=0.85, min_df=1, ngram_range=(1, 2), sublinear_tf=True)
     tfidf_matrix = vectorizer.fit_transform(docs)
     with open(VECTORIZER_PATH, "wb") as f:
         pickle.dump(vectorizer, f)

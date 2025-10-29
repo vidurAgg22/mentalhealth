@@ -13,9 +13,14 @@ try:
 except Exception as e:
     print("Error preparing embeddings:", e)
 
+# EXPANDED LIST for better crisis coverage
 CRISIS_KEYWORDS = [
     "suicide", "kill myself", "end my life", "want to die",
-    "self-harm", "hurt myself", "harm myself", "i'm going to kill"
+    "self-harm", "hurt myself", "harm myself", "i'm going to kill",
+    "i can't go on", "hopeless", "worthless", "tired of living",
+    "gonna hurt myself", "no purpose", "give up", "say goodbye",
+    "overdose", "slit", "final note", "end it all",
+    "ready to check out", "i give up", "i don't want to wake up"
 ]
 
 @app.route("/")
@@ -32,10 +37,11 @@ def chat():
 
     lower = user_input.lower()
     if any(keyword in lower for keyword in CRISIS_KEYWORDS):
-        # Crisis response (not a substitute for professional help)
+        # CRISIS RESPONSE with Supportive Tone
         crisis_msg = (
-            "I'm sorry you're feeling this way. If you're in immediate danger, please call your local emergency number (for example 911 or 112). "
-            "If you're in the United States, you can call or text 988 to reach the Suicide & Crisis Lifeline. "
+            "**I'm hearing that you are going through a difficult time right now, and I want you to know you don't have to face this alone.** "
+            "If you're in immediate danger, please call your local emergency number (for example 911 or 112). "
+            "If you're in the United States, you can call or text **988** to reach the Suicide & Crisis Lifeline. "
             "If you are outside the US, please contact local emergency services or a trusted person nearby. "
             "Would you like resources for coping strategies or to find professional help?"
         )
@@ -44,9 +50,20 @@ def chat():
     # Regular knowledge-base lookup
     results = answer_query(user_input, top_k=1)
     if not results:
-        return jsonify({"response": "Sorry, I couldn't find an answer. Try rephrasing or ask another question."})
+        # Helpful Tone for no result found
+        return jsonify({"response": "I hear you. I'm sorry, I couldn't find a direct, relevant answer in my knowledge base. Please try rephrasing your question or asking about a different topic, and I will search again. I'm here to support you."})
+        
     best = results[0]
-    reply = f"{best['answer']} (confidence: {best['score']:.2f})"
+    kb_answer = best['answer']
+    
+    # ENHANCEMENT: Conversational Wrapper for Helpful Tone
+    reply = (
+        f"Thank you for reaching out! Finding the right information is a great step. Here is some guidance on that topic:\n\n"
+        f"**{kb_answer}**\n\n"
+        f"I hope this helps you feel a little more supported."
+    )
+    
+    # Clean JSON output (removing score from reply text, passing separately)
     return jsonify({"response": reply, "source_question": best.get("question"), "score": best.get("score")})
 
 

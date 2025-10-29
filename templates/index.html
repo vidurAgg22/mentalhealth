@@ -3,53 +3,256 @@
   <head>
     <meta charset="utf-8" />
     <title>Mental Health Chatbot (KB search)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 720px;
-        margin: 40px auto;
+      /* --- 1. CSS Variables for Theming --- */
+      :root,
+      [data-theme="light"] {
+        /* LIGHT MODE VARIABLES */
+        --color-bg-primary: #f8f9fa; /* Very light gray */
+        --color-bg-secondary: #ffffff; /* White chat box */
+        --color-text-primary: #212529; /* Dark gray for text */
+        --color-text-user: #007bff; /* Blue for user input */
+        --color-text-bot: #28a745; /* Green for bot reply */
+        --color-border: #dee2e6;
+        --color-citation: #6c757d;
+        --color-button-bg: #007bff;
+        --color-button-text: #ffffff;
       }
+
+      [data-theme="dark"] {
+        /* DARK MODE VARIABLES */
+        --color-bg-primary: #121212; /* Very dark background */
+        --color-bg-secondary: #1e1e1e; /* Slightly lighter dark chat box */
+        --color-text-primary: #f8f9fa; /* Light text */
+        --color-text-user: #8ab4f8; /* Light blue */
+        --color-text-bot: #6dd68b; /* Light green */
+        --color-border: #333333;
+        --color-citation: #aaaaaa;
+        --color-button-bg: #444444;
+        --color-button-text: #ffffff;
+      }
+
+      /* --- 2. Global and Layout Styles --- */
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 15px;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        transition: background-color 0.3s, color 0.3s;
+      }
+      h2 {
+        color: var(--color-text-primary);
+        border-bottom: 2px solid var(--color-border);
+        padding-bottom: 10px;
+      }
+
+      /* --- 3. Chat Specific Styles --- */
       #chat {
-        border: 1px solid #ddd;
-        padding: 12px;
-        min-height: 200px;
+        border: 1px solid var(--color-border);
+        background-color: var(--color-bg-secondary);
+        border-radius: 8px;
+        padding: 15px;
+        min-height: 400px; /* Increased height for better look */
+        max-height: 60vh;
+        overflow-y: auto; /* Enable scrolling */
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
       .user {
-        color: #0b6;
-        margin: 8px 0;
+        color: var(--color-text-user);
+        padding: 8px 12px;
+        margin: 12px 0;
+        text-align: right;
+        font-weight: bold;
       }
       .bot {
-        color: #006;
-        margin: 8px 0;
+        color: var(--color-text-bot);
+        background-color: var(
+          --color-bg-primary
+        ); /* Use primary BG for bot replies for subtle contrast */
+        padding: 10px 15px;
+        margin: 12px 0;
+        border-radius: 8px;
+        text-align: left;
+        line-height: 1.4;
       }
+
+      /* --- 4. Form and Input Styles --- */
       #inputBox {
         width: 100%;
-        padding: 8px;
-        margin-top: 12px;
+        padding: 10px;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        margin-top: 8px;
+        color: var(--color-text-primary);
+        background-color: var(--color-bg-secondary);
       }
       button {
-        padding: 8px 12px;
+        padding: 10px 16px;
         margin-top: 8px;
+        background-color: var(--color-button-bg);
+        color: var(--color-button-text);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+
+      /* --- 5. Toggle Switch and Layout --- */
+      #controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .theme-toggle-wrapper {
+        display: flex;
+        align-items: center;
+        font-size: 0.9em;
+      }
+      /* Simple CSS-based toggle switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 25px;
+        margin-left: 10px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 25px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 4px;
+        bottom: 3.5px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: var(--color-button-bg);
+      }
+      input:checked + .slider:before {
+        transform: translateX(18px);
       }
     </style>
   </head>
   <body>
     <h2>Mental Health Chatbot (knowledge base search)</h2>
+
+    <div id="controls">
+      <div class="theme-toggle-wrapper">
+        Dark Mode:
+        <label class="switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
     <div id="chat"></div>
 
     <input
       id="inputBox"
       placeholder="Ask a question (example: How can I manage anxiety?)"
     />
-    <br />
     <button onclick="send()">Send</button>
 
     <script>
-      function append(role, text) {
+      // Key for localStorage
+      const THEME_KEY = "chat-theme-preference";
+
+      // --- 1. Theme Logic ---
+      function getInitialTheme() {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme) {
+          return savedTheme;
+        }
+        // Check system preference (default to light if no preference)
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem(THEME_KEY, theme);
+        document.getElementById("theme-toggle").checked = theme === "dark";
+      }
+
+      // Apply theme on load and set up the toggle
+      document.addEventListener("DOMContentLoaded", () => {
+        const initialTheme = getInitialTheme();
+        applyTheme(initialTheme);
+
+        document
+          .getElementById("theme-toggle")
+          .addEventListener("change", (e) => {
+            const newTheme = e.target.checked ? "dark" : "light";
+            applyTheme(newTheme);
+          });
+      });
+
+      // --- 2. Chat Logic (Mostly unchanged, but supporting new format) ---
+
+      function append(role, text, source, score) {
         const chat = document.getElementById("chat");
         const div = document.createElement("div");
+
         div.className = role === "user" ? "user" : "bot";
-        div.textContent = (role === "user" ? "You: " : "Bot: ") + text;
+
+        if (role === "user") {
+          div.textContent = "You: " + text;
+        } else {
+          // New: Display the helpful response, preserving line breaks and bolding
+          div.innerHTML =
+            (role === "user" ? "You: " : "Bot: ") +
+            text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+          div.style.whiteSpace = "pre-wrap"; // Preserve line breaks
+
+          // Add the citation information (Matched Topic and Score) below the main text
+          if (source || score) {
+            const citationDiv = document.createElement("div");
+            citationDiv.style.fontSize = "0.8em";
+            citationDiv.style.color = "var(--color-citation)";
+            citationDiv.style.marginTop = "4px";
+
+            let citationText = "";
+            if (source) {
+              citationText += `(Source: Matched question "${source}")`;
+            }
+            if (score && !isNaN(score)) {
+              citationText += source ? ` ` : ``;
+              citationText += `[Relevance: ${score.toFixed(2)}]`;
+            }
+            citationDiv.textContent = citationText;
+            div.appendChild(citationDiv);
+          }
+        }
+
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
       }
@@ -67,7 +270,9 @@
             body: JSON.stringify({ input: text }),
           });
           const data = await res.json();
-          append("bot", data.response);
+          // Pass all data fields to the updated append function
+          append("bot", data.response, data.source_question, data.score);
+
           if (data.is_crisis) {
             // highlight crisis
             alert(
